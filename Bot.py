@@ -41,14 +41,16 @@ class CalculatorBot(discord.Client):
 class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
     start_lvl = discord.ui.TextInput(label='Start Level', placeholder='e.g. 1', max_length=3)
     target_lvl = discord.ui.TextInput(label='Target Level', placeholder='e.g. 40', max_length=3)
-    current_xp = discord.ui.TextInput(label='Current XP (Optional)', required=False, default='0')
+    current_xp = discord.ui.TextInput(label='Current XP ', required=False, default='0')
+    end_xp = discord.ui.TextInput(label='End XP ', required=False, default='0')
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Data validation: Ensure inputs are integers
+        # Data validation: Ensure inputs are integer
         try:
             start = int(self.start_lvl.value)
             target = int(self.target_lvl.value)
             xp_owned = int(self.current_xp.value or 0)
+            end_xp = int(self.end_xp.value or 0)
         except ValueError:
             return await interaction.response.send_message("Invalid input. Please use numbers only.", ephemeral=True)
 
@@ -91,15 +93,15 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             elif rem > 0: mini = 1
 
         # Calculate cost in Diamond Locks
-        total_dl = (mini * 7) + (small * 11) + (mediant * 16) + (vast * 30)
+        total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
 
         # Format and send the response message
         msg = f"💎 **Total XP Needed:** {total_xp:,}\n\n"
         msg += "**Recommended Packs:**\n"
         
         if vast > 0: msg += f"📦 {vast}x Vast Pack (30 DL each)\n"
-        if mediant > 0: msg += f"📦 {mediant}x Mediant Pack (16 DL each)\n"
-        if small > 0: msg += f"📦 {small}x Small Pack (11 DL each)\n"
+        if mediant > 0: msg += f"📦 {mediant}x Mediant Pack (17 DL each)\n"
+        if small > 0: msg += f"📦 {small}x Small Pack (12 DL each)\n"
         if mini > 0: msg += f"📦 {mini}x Mini Pack (7 DL each)\n"
         
         msg += f"\n🔒 **Total Cost:** {total_dl} Diamond Locks"
@@ -131,4 +133,4 @@ if __name__ == "__main__":
         print("CRITICAL ERROR: DISCORD_TOKEN not found in .env file.")
     else:
         # 3. Start the bot
-        client.run(MTQ4ODI2MDk5NDQ3OTE2MTQ5NQ.G42xkU.-SalnEvuBwZgPDKsVQDNtDeB1wnYzX3q1ZJ7co)
+        client.run(token)
