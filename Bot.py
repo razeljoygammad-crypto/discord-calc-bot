@@ -126,22 +126,4 @@ if __name__ == "__main__":
     keep_alive()  
     
     # 2. Load the hidden token securely
-    load_dotenv() 
-    token = os.getenv('DISCORD_TOKEN')
-    
-    if not token:
-        print("CRITICAL ERROR: DISCORD_TOKEN not found in .env file.")
-    else:
-        # 3. Start the bot
-        TOKEN = os.getenv("TOKEN")
-
-        if not TOKEN:
-            raise ValueError("❌ TOKEN is missing!")
-
-        print("✅ Token loaded")
-
-        @bot.event
-        async def on_ready():
-            print(f"🔥 Logged in as {bot.user}")
-
-        bot.run(TOKEN)
+     bot.run(TOKEN)
