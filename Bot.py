@@ -133,4 +133,4 @@ if __name__ == "__main__":
         print("CRITICAL ERROR: DISCORD_TOKEN not found in .env file.")
     else:
         # 3. Start the bot
-        client.run(token)
+        bot.run(TOKEN)
