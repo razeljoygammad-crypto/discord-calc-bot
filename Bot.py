@@ -126,4 +126,7 @@ if __name__ == "__main__":
     keep_alive()  
     
     # 2. Load the hidden token securely
-    client.run(token)
+    import os
+
+token = os.getenv('DISCORD_TOKEN')
+client.run(token)
