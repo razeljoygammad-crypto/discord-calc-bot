@@ -126,4 +126,5 @@ async def on_ready():
     print(f"Logged in as {client.user}")
 
 keep_alive()
-client.run(os.environ["TOKEN"])
+token = os.getenv('DISCORD_TOKEN')
+client.run(token)
