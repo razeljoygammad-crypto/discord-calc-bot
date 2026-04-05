@@ -78,8 +78,8 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             elif target <= 40: 
                 vast = 1
             else:
-                vast = total_xp // 1_100_000
-                rem = total_xp % 1_100_000
+                vast = total_xp // 1_000_000
+                rem = total_xp % 1_000_000
                 if rem > 500_000: vast += 1
                 elif rem > 250_000: mediant = 1
                 elif rem > 125_000: small = 1
@@ -96,17 +96,20 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
 
         # Format and send the response message
-        msg = f"💎 **Total XP Needed:** {total_xp:,}\n\n"
-        msg += "**Recommended Packs:**\n"
+        msg = f"📈 **Total XP Needed:** {total_xp:,}\n\n"
+        msg += "📦**Recommended Packs:**📦\n"
+       
         
-        if vast > 0: msg += f"📦 {vast}x Vast Pack (30 DL each)\n"
-        if mediant > 0: msg += f"📦 {mediant}x Mediant Pack (17 DL each)\n"
-        if small > 0: msg += f"📦 {small}x Small Pack (12 DL each)\n"
-        if mini > 0: msg += f"📦 {mini}x Mini Pack (7 DL each)\n"
-        
-        msg += f"\n🔒 **Total Cost:** {total_dl} Diamond Locks"
+        if vast > 0: msg += f" 📦 {vast}x Vast Pack (30💎each)\n"
+        if mediant > 0: msg += f" 📦 {mediant}x Mediant Pack (17💎each)\n"
+        if small > 0: msg += f" 📦 {small}x Small Pack (12💎each)\n"
+        if mini > 0: msg += f" 📦 {mini}x Mini Pack (7💎each)\n"
 
-        await interaction.response.send_message(msg, ephemeral=True)
+
+        msg += f"\n💰 **Total Cost:** {total_dl} 💎Diamond Locks"
+
+        # Everyone in the channel can see the message
+        await interaction.response.send_message(msg)
 
 # ==========================================
 # 4. COMMAND REGISTRATION & EXECUTION
