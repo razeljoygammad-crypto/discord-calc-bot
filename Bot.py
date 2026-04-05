@@ -120,19 +120,10 @@ client = CalculatorBot()
 async def calc_command(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-@bot.event
+# ---------------- START ----------------
+@client.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
+    print(f"Logged in as {client.user}")
 
-# Example command
-@bot.command()
-async def ping(ctx):
-    await ctx.send("Pong!")
-
-# ---------------- START BOTH ----------------
-threading.Thread(target=run_web).start()
-
-bot.run(os.environ["TOKEN"])
+keep_alive()
+client.run(os.environ["TOKEN"])
