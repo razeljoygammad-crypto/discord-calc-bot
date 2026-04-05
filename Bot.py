@@ -120,16 +120,21 @@ client = CalculatorBot()
 async def calc_command(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
-@client.event
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
 async def on_ready():
-    print(f'System Online: Logged in as {client.user}')
+    print(f"Logged in as {bot.user}")
 
-if __name__ == "__main__":
-    # 1. Start the web server to keep the bot alive
-    keep_alive()  
-    
-    # 2. Load the hidden token securely
-    import os
+# Example command
+@bot.command()
+async def ping(ctx):
+    await ctx.send("Pong!")
 
-token = os.getenv('DISCORD_TOKEN')
-client.run(token)
+# ---------------- START BOTH ----------------
+threading.Thread(target=run_web).start()
+
+bot.run(os.environ["TOKEN"])
