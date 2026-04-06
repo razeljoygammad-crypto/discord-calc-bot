@@ -8,6 +8,11 @@ from threading import Thread
 load_dotenv()
 
 # ==========================================
+# 🔒 ALLOWED CATEGORY ID
+# ==========================================
+ALLOWED_CATEGORY_ID = 123456789012345678  # ⬅️ REPLACE THIS
+
+# ==========================================
 # 1. KEEP-ALIVE WEB SERVER
 # ==========================================
 app = Flask('')
@@ -21,6 +26,7 @@ def run_server():
 
 def keep_alive():
     server_thread = Thread(target=run_server)
+    server_thread.daemon = True
     server_thread.start()
 
 # ==========================================
@@ -41,15 +47,28 @@ class CalculatorBot(discord.Client):
 # 3. CALCULATOR MODAL
 # ==========================================
 class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
-    start_lvl = discord.ui.TextInput(label='Start Level', placeholder='e.g. 1')
-    target_lvl = discord.ui.TextInput(label='Target Level', placeholder='e.g. 40')
-    current_xp = discord.ui.TextInput(label='Current XP', required=False, default='0')
+
+    start_lvl = discord.ui.TextInput(
+        label='Start Level',
+        placeholder='e.g. 1'
+    )
+
+    target_lvl = discord.ui.TextInput(
+        label='Target Level',
+        placeholder='e.g. 40'
+    )
+
+    current_xp = discord.ui.TextInput(
+        label='Current XP',
+        required=False,
+        placeholder='0'
+    )
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
             start = int(self.start_lvl.value)
             target = int(self.target_lvl.value)
-            xp_owned = int(self.current_xp.value or 0)
+            xp_owned = int(self.current_xp.value.strip() or 0)
         except ValueError:
             return await interaction.response.send_message(
                 "❌ Please use numbers only.", ephemeral=True
@@ -88,23 +107,18 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             mini += 1
 
         # ==========================================
-        # COST CALCULATION
+        # COST
         # ==========================================
         total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
 
         # ==========================================
-        # ⏱️ TIME PER PACK (minutes)
+        # TIME
         # ==========================================
-        MINI_TIME = 5
-        SMALL_TIME = 10
-        MEDIANT_TIME = 25
-        VAST_TIME = 30
-
         total_time = (
-            (mini * MINI_TIME) +
-            (small * SMALL_TIME) +
-            (mediant * MEDIANT_TIME) +
-            (vast * VAST_TIME)
+            (mini * 5) +
+            (small * 10) +
+            (mediant * 25) +
+            (vast * 30)
         )
 
         hours = total_time // 60
@@ -118,17 +132,8 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             color=discord.Color.blurple()
         )
 
-        embed.add_field(
-            name="📊 Levels",
-            value=f"{start} ➜ {target}",
-            inline=False
-        )
-
-        embed.add_field(
-            name="📈 Total XP Needed",
-            value=f"{total_xp:,}",
-            inline=False
-        )
+        embed.add_field(name="📊 Levels", value=f"{start} ➜ {target}", inline=False)
+        embed.add_field(name="📈 Total XP Needed", value=f"{total_xp:,}", inline=False)
 
         packs_text = ""
         if vast:
@@ -140,39 +145,37 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         if mini:
             packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
 
-        embed.add_field(
-            name="📦 Recommended Packs",
-            value=packs_text or "None",
-            inline=False
-        )
+        embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
+        embed.add_field(name="💰 Total Cost", value=f"{total_dl} 💎 Diamond Locks", inline=False)
+        embed.add_field(name="⏱️ Estimated Time", value=f"{hours}h {minutes}m", inline=False)
 
-        embed.add_field(
-            name="💰 Total Cost",
-            value=f"{total_dl} 💎 Diamond Locks",
-            inline=False
-        )
-
-        # ⏱️ NEW TIME FIELD
-        embed.add_field(
-            name="⏱️ Estimated Time",
-            value=f"{hours}h {minutes}m",
-            inline=False
-        )
-        
         await interaction.response.send_message(embed=embed)
 
 # ==========================================
-# 4. BOT + COMMAND
+# 4. BOT
 # ==========================================
 bot = CalculatorBot()
 
+# 🔒 CATEGORY CHECK FOR COMMAND
 @bot.tree.command(name="calc", description="Open XP Calculator")
 async def calc(interaction: discord.Interaction):
+
+    if (
+        interaction.channel is None or
+        interaction.channel.category is None or
+        interaction.channel.category.id != ALLOWED_CATEGORY_ID
+    ):
+        return await interaction.response.send_message(
+            "❌ This command can only be used in the allowed category.",
+            ephemeral=True
+        )
+
     await interaction.response.send_modal(CalculatorModal())
 
 # ==========================================
 # 5. RUN
 # ==========================================
 keep_alive()
+
 token = os.getenv("DISCORD_TOKEN")
 bot.run(token)
