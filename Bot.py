@@ -10,7 +10,7 @@ load_dotenv()
 # ==========================================
 # 🔒 ALLOWED CATEGORY ID
 # ==========================================
-ALLOWED_CATEGORY_ID = 123456789012345678  # ⬅️ REPLACE THIS
+ALLOWED_CATEGORY_ID = 1487387217017045134  # ⬅️ REPLACE THIS
 
 # ==========================================
 # 1. KEEP-ALIVE WEB SERVER
