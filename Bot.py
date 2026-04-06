@@ -55,14 +55,18 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
                 "❌ Please use numbers only.", ephemeral=True
             )
 
+        # ==========================================
         # XP CALCULATION
+        # ==========================================
         total_xp = 0
         for lvl in range(start, target):
             total_xp += 50 * (lvl * lvl + 2)
 
         total_xp = max(0, total_xp - xp_owned)
 
+        # ==========================================
         # PACK CALCULATION
+        # ==========================================
         MINI_XP = 125_000
         SMALL_XP = 250_000
         MEDIANT_XP = 500_000
@@ -83,10 +87,32 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         if remaining % MINI_XP > 0:
             mini += 1
 
-        # COST
+        # ==========================================
+        # COST CALCULATION
+        # ==========================================
         total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
 
+        # ==========================================
+        # ⏱️ TIME PER PACK (minutes)
+        # ==========================================
+        MINI_TIME = 5
+        SMALL_TIME = 10
+        MEDIANT_TIME = 25
+        VAST_TIME = 30
+
+        total_time = (
+            (mini * MINI_TIME) +
+            (small * SMALL_TIME) +
+            (mediant * MEDIANT_TIME) +
+            (vast * VAST_TIME)
+        )
+
+        hours = total_time // 60
+        minutes = total_time % 60
+
+        # ==========================================
         # EMBED
+        # ==========================================
         embed = discord.Embed(
             title="XP & Pack Calculator",
             color=discord.Color.blurple()
@@ -125,6 +151,15 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             value=f"{total_dl} 💎 Diamond Locks",
             inline=False
         )
+
+        # ⏱️ NEW TIME FIELD
+        embed.add_field(
+            name="⏱️ Estimated Time",
+            value=f"{hours}h {minutes}m",
+            inline=False
+        )
+
+        embed.set_footer(text="XP Calculator System")
 
         await interaction.response.send_message(embed=embed)
 
