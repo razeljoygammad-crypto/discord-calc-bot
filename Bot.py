@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 from flask import Flask
 from threading import Thread
 
+load_dotenv()
+
 # ==========================================
 # 1. KEEP-ALIVE WEB SERVER
 # ==========================================
-# This lightweight server runs in the background. 
-# It prevents free cloud platforms from putting the bot to sleep.
 app = Flask('')
 
 @app.route('/')
@@ -24,7 +24,21 @@ def keep_alive():
     server_thread.start()
 
 # ==========================================
-# CALCULATOR MODAL
+# 2. DISCORD BOT SETUP
+# ==========================================
+class CalculatorBot(discord.Client):
+    def __init__(self):
+        super().__init__(intents=discord.Intents.all())
+        self.tree = app_commands.CommandTree(self)
+
+    async def setup_hook(self):
+        await self.tree.sync()
+
+    async def on_ready(self):
+        print(f"✅ Logged in as {self.user}")
+
+# ==========================================
+# 3. CALCULATOR MODAL
 # ==========================================
 class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
     start_lvl = discord.ui.TextInput(label='Start Level', placeholder='e.g. 1')
@@ -41,18 +55,14 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
                 "❌ Please use numbers only.", ephemeral=True
             )
 
-        # ==========================================
         # XP CALCULATION
-        # ==========================================
         total_xp = 0
         for lvl in range(start, target):
             total_xp += 50 * (lvl * lvl + 2)
 
         total_xp = max(0, total_xp - xp_owned)
 
-        # ==========================================
-        # PACK CALCULATION (GREEDY)
-        # ==========================================
+        # PACK CALCULATION
         MINI_XP = 125_000
         SMALL_XP = 250_000
         MEDIANT_XP = 500_000
@@ -73,42 +83,35 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         if remaining % MINI_XP > 0:
             mini += 1
 
-        # ==========================================
-        # COST CALCULATION
-        # ==========================================
+        # COST
         total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
 
-        # ==========================================
-        # EMBED RESPONSE
-        # ==========================================
+        # EMBED
         embed = discord.Embed(
             title="XP & Pack Calculator",
             color=discord.Color.blurple()
         )
 
-        # 📊 Levels
         embed.add_field(
             name="📊 Levels",
             value=f"{start} ➜ {target}",
             inline=False
         )
 
-        # 📈 XP Needed
         embed.add_field(
             name="📈 Total XP Needed",
             value=f"{total_xp:,}",
             inline=False
         )
 
-        # 📦 Packs
         packs_text = ""
-        if vast > 0:
+        if vast:
             packs_text += f"📦 {vast}x Vast Pack (30💎)\n"
-        if mediant > 0:
+        if mediant:
             packs_text += f"📦 {mediant}x Mediant Pack (17💎)\n"
-        if small > 0:
+        if small:
             packs_text += f"📦 {small}x Small Pack (12💎)\n"
-        if mini > 0:
+        if mini:
             packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
 
         embed.add_field(
@@ -117,7 +120,6 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             inline=False
         )
 
-        # 💰 Cost
         embed.add_field(
             name="💰 Total Cost",
             value=f"{total_dl} 💎 Diamond Locks",
@@ -129,7 +131,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         await interaction.response.send_message(embed=embed)
 
 # ==========================================
-# SLASH COMMAND
+# 4. BOT + COMMAND
 # ==========================================
 bot = CalculatorBot()
 
@@ -137,11 +139,9 @@ bot = CalculatorBot()
 async def calc(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
-# ---------------- START ----------------
-@client.event
-async def on_ready():
-    print(f"Logged in as {client.user}")
-
+# ==========================================
+# 5. RUN
+# ==========================================
 keep_alive()
-token = os.getenv('DISCORD_TOKEN')
-client.run(token)
+token = os.getenv("DISCORD_TOKEN")
+bot.run(token)
