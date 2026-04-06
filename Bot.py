@@ -158,9 +158,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
             value=f"{hours}h {minutes}m",
             inline=False
         )
-
-        embed.set_footer(text="XP Calculator System")
-
+        
         await interaction.response.send_message(embed=embed)
 
 # ==========================================
