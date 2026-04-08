@@ -57,8 +57,10 @@ class CalculatorBot(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        await self.tree.sync()
-
+    await self.tree.sync()
+    self.add_view(CloseView())  # 🔥 IMPORTANT
+    self.add_view(TicketView()) # 🔥 for ticket buttons
+   
     async def on_ready(self):
         print(f"✅ Logged in as {self.user}")
 
@@ -209,6 +211,10 @@ class CloseView(discord.ui.View):
 
     @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.red)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.channel:
+            return
+
+        await interaction.response.send_message("🔒 Closing ticket...", ephemeral=True)
         await interaction.channel.delete()
 
 
