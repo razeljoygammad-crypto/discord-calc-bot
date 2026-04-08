@@ -173,6 +173,178 @@ async def calc(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
 # ==========================================
+# 🎫 TICKET SYSTEM
+# ==========================================
+OWNER_ID = 123456789  # ⬅️ YOUR ID
+
+SUPPORT_CATEGORY_ID = 1466995318246609069
+REPORT_CATEGORY_ID = 1491264107364745216
+BUY_CATEGORY_ID = 1491264209969872997
+ADMINSHIP_CATEGORY_ID = 1491264151786360855
+
+# =========================
+# STORAGE
+# =========================
+active_tickets = {}
+
+# =========================
+# CLOSE BUTTON
+# =========================
+class CloseView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.red)
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.channel.delete()
+
+# =========================
+# TICKET SYSTEM
+# =========================
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    async def create_ticket(self, interaction, category_id, prefix, message, overwrites):
+        global ticket_counter
+
+        user_id = interaction.user.id
+        guild = interaction.guild
+        category = guild.get_channel(category_id)
+
+        # ❌ prevent duplicate
+        if user_id in active_tickets:
+            ch = guild.get_channel(active_tickets[user_id])
+            if ch:
+                return await interaction.response.send_message(
+                    f"❌ You already have a ticket: {ch.mention}",
+                    ephemeral=True
+                )
+
+        # 🔢 PERMANENT NUMBER
+        ticket_counter += 1
+        save_counter(ticket_counter)
+
+        ticket_number = str(ticket_counter).zfill(3)
+        channel_name = f"{prefix}-{ticket_number}"
+
+        channel = await guild.create_text_channel(
+            name=channel_name,
+            category=category,
+            overwrites=overwrites
+        )
+
+        active_tickets[user_id] = channel.id
+
+        await channel.send(
+            f"{interaction.user.mention}\n{message}\n\n🎫 Ticket Number: #{ticket_number}",
+            view=CloseView()
+        )
+
+        await interaction.response.send_message(
+            f"✅ Ticket created: {channel.mention} (#{ticket_number})",
+            ephemeral=True
+        )
+
+    # 💰 BUY
+    @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.blurple)
+    async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        }
+
+        staff_role = discord.utils.get(interaction.guild.roles, name="Staff")
+        if staff_role:
+            overwrites[staff_role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+
+        await self.create_ticket(
+            interaction,
+            BUY_CATEGORY_ID,
+            "buy",
+            "💰 Buy ticket created. Our team will assist you.",
+            overwrites
+        )
+
+    # 🚨 REPORT (OWNER ONLY)
+    @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
+    async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user.id != OWNER_ID:
+            return await interaction.response.send_message(
+                "❌ Only the owner can use this.",
+                ephemeral=True
+            )
+
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            )
+        }
+
+        await self.create_ticket(
+            interaction,
+            REPORT_CATEGORY_ID,
+            "report",
+            "🚨 Private report (owner only).",
+            overwrites
+        )
+
+    # 💼 ADMINSHIP (OWNER ONLY)
+    @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
+    async def adminship(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user.id != OWNER_ID:
+            return await interaction.response.send_message(
+                "❌ Only the owner can use this.",
+                ephemeral=True
+            )
+
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            )
+        }
+
+        await self.create_ticket(
+            interaction,
+            ADMINSHIP_CATEGORY_ID,
+            "adminship",
+            "💼 Adminship request (owner only).",
+            overwrites
+        )
+
+# =========================
+# PANEL COMMAND
+# =========================
+@bot.tree.command(name="ticket_panel", description="Send ticket panel")
+async def ticket_panel(interaction: discord.Interaction):
+
+    if interaction.user.id != OWNER_ID:
+        return await interaction.response.send_message(
+            "❌ Owner only.",
+            ephemeral=True
+        )
+
+    embed = discord.Embed(
+        title="🎫 SUPPORT CENTER",
+        description=(
+            "Click a button below to create a ticket:\n\n"
+            "💼 Buy Adminship – Apply for admin\n"
+            "💰 Buy – Purchase help\n"
+            "🚨 Report – Private report (owner only can see)"
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await interaction.response.send_message(embed=embed, view=TicketView())
+
+# ==========================================
 # 5. RUN
 # ==========================================
 keep_alive()
