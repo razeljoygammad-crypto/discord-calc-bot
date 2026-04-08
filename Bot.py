@@ -16,6 +16,15 @@ SUPPORT_CATEGORY_ID = 1466995318246609069
 REPORT_CATEGORY_ID = 1491264107364745216
 BUY_CATEGORY_ID = 1491264209969872997
 ADMINSHIP_CATEGORY_ID = 1491264151786360855
+
+# =========================
+# SETUP
+# =========================
+intents = discord.Intents.default()
+intents.guilds = True
+intents.messages = True
+intents.message_content = True
+
 # ==========================================
 # 🔒 ALLOWED CATEGORY ID
 # ==========================================
@@ -25,6 +34,11 @@ ALLOWED_CATEGORY_ID = 1487387217017045134  # ⬅️ REPLACE THIS
 # STORAGE
 # =========================
 active_tickets = {}
+ticket_counter = 0
+
+def save_counter(value):
+    global ticket_counter
+    ticket_counter = value
 
 # ==========================================
 # 1. KEEP-ALIVE WEB SERVER
@@ -199,7 +213,7 @@ class CloseView(discord.ui.View):
 
 
 # =========================
-# TICKET VIEW (ONLY ONE CLASS)
+# TICKET SYSTEM
 # =========================
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -208,41 +222,50 @@ class TicketView(discord.ui.View):
     async def create_ticket(self, interaction, category_id, prefix, message, overwrites):
         global ticket_counter
 
-        user_id = interaction.user.id
+        user = interaction.user
         guild = interaction.guild
-        category = guild.get_channel(category_id)
 
-        # ❌ prevent duplicate
-        if user_id in active_tickets:
-            ch = guild.get_channel(active_tickets[user_id])
+        # prevent duplicate tickets
+        if user.id in active_tickets:
+            ch = guild.get_channel(active_tickets[user.id])
             if ch:
                 return await interaction.response.send_message(
                     f"❌ You already have a ticket: {ch.mention}",
                     ephemeral=True
                 )
 
-        # 🔢 PERMANENT NUMBER
+        # get category properly
+        category = discord.utils.get(guild.categories, id=category_id)
+        if category is None:
+            return await interaction.response.send_message(
+                "❌ Category not found. Check your IDs.",
+                ephemeral=True
+            )
+
+        # ticket number
         ticket_counter += 1
         save_counter(ticket_counter)
 
         ticket_number = str(ticket_counter).zfill(3)
         channel_name = f"{prefix}-{ticket_number}"
 
+        # create channel
         channel = await guild.create_text_channel(
             name=channel_name,
             category=category,
             overwrites=overwrites
         )
 
-        active_tickets[user_id] = channel.id
+        active_tickets[user.id] = channel.id
 
+        # send inside ticket
         await channel.send(
-            f"{interaction.user.mention}\n{message}\n\n🎫 Ticket Number: #{ticket_number}",
+            f"{user.mention}\n{message}\n\n🎫 Ticket #{ticket_number}",
             view=CloseView()
         )
 
         await interaction.response.send_message(
-            f"✅ Ticket created: {channel.mention} (#{ticket_number})",
+            f"✅ Ticket created: {channel.mention}",
             ephemeral=True
         )
 
@@ -259,7 +282,7 @@ class TicketView(discord.ui.View):
             interaction,
             BUY_CATEGORY_ID,
             "buy",
-            "💰 Buy ticket created. Our team will assist you.",
+            "💰 Buy ticket created. Staff will assist you.",
             overwrites
         )
 
@@ -313,15 +336,16 @@ async def ticket_panel(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎫 SUPPORT CENTER",
         description=(
-            "Click a button below to create a ticket:\n\n"
-            "💼 Adminship – Apply for admin\n"
+            "Click a button below:\n\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report"
+            "🚨 Report – Report something\n"
+            "💼 Adminship – Apply for admin"
         ),
         color=discord.Color.blurple()
     )
 
     await interaction.response.send_message(embed=embed, view=TicketView())
+
 # ==========================================
 # 5. RUN
 # ==========================================
