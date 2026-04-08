@@ -134,7 +134,11 @@ class CloseView(discord.ui.View):
         super().__init__(timeout=None)
         self.t_type = t_type
 
-    @discord.ui.button(label="🔒 Close", style=discord.ButtonStyle.red)
+    @discord.ui.button(
+        label="🔒 Close",
+        style=discord.ButtonStyle.red,
+        custom_id="close_ticket"  # ✅ REQUIRED
+    )
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         uid = interaction.user.id
 
@@ -155,18 +159,41 @@ class TicketView(discord.ui.View):
             i.user: discord.PermissionOverwrite(view_channel=True)
         }
 
-    @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.green)
+    @discord.ui.button(
+        label="💰 Buy",
+        style=discord.ButtonStyle.green,
+        custom_id="ticket_buy"
+    )
     async def buy(self, i: discord.Interaction, b: discord.ui.Button):
-        await create_ticket(i, BUY_CATEGORY_ID, "buy", "Buy ticket created.", self.perms(i))
+        await create_ticket(i, BUY_CATEGORY_ID, "buy", "💰 Buy ticket created.", self.perms(i))
 
-    @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
+    @discord.ui.button(
+        label="🚨 Report",
+        style=discord.ButtonStyle.red,
+        custom_id="ticket_report"
+    )
     async def report(self, i: discord.Interaction, b: discord.ui.Button):
-        await create_ticket(i, REPORT_CATEGORY_ID, "report", "Report ticket created.", self.perms(i))
 
-    @discord.ui.button(label="💼 Admin", style=discord.ButtonStyle.blurple)
+        owner = i.guild.get_member(OWNER_ID) or await i.guild.fetch_member(OWNER_ID)
+
+        overwrites = {
+            i.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            i.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            owner: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        }
+
+        await create_ticket(i, REPORT_CATEGORY_ID, "report", "🚨 Private report created.", overwrites)
+
+    @discord.ui.button(
+        label="💼 Admin",
+        style=discord.ButtonStyle.blurple,
+        custom_id="ticket_admin"
+    )
     async def admin(self, i: discord.Interaction, b: discord.ui.Button):
-        await create_ticket(i, ADMINSHIP_CATEGORY_ID, "admin", "Admin request created.", self.perms(i))
-
+        await create_ticket(i, ADMINSHIP_CATEGORY_ID, "admin", "💼 Admin request created.", self.perms(i))
+# =========================
+# PANEL COMMAND
+# =========================
 @bot.tree.command(name="ticket_panel", description="Send ticket panel")
 async def ticket_panel(interaction: discord.Interaction):
 
@@ -182,7 +209,7 @@ async def ticket_panel(interaction: discord.Interaction):
             "Click a button below to create a ticket:\n\n"
             "💼 Buy Adminship – Apply for admin\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report (owner only can see)"
+            "🚨 Report – Private report "
         ),
         color=discord.Color.blurple()
     )
@@ -194,7 +221,3 @@ async def ticket_panel(interaction: discord.Interaction):
 # =========================
 keep_alive()
 bot.run(os.getenv("DISCORD_TOKEN"))
-keep_alive()
-
-token = os.getenv("DISCORD_TOKEN")
-bot.run(token)
