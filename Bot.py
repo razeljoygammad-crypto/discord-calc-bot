@@ -165,7 +165,6 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
 # ==========================================
 # 4. BOT
 # ==========================================
-bot = CalculatorBot()
 
 # 🔒 CATEGORY CHECK FOR COMMAND
 @bot.tree.command(name="calc", description="Open XP Calculator")
