@@ -299,24 +299,30 @@ class CloseTicketView(discord.ui.View):
         )
 
 
-# ==========================================
-# COMMAND TO SEND PANEL
-# ==========================================
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def ticket(ctx):
+# =========================
+# PANEL COMMAND
+# =========================
+@bot.tree.command(name="ticket_panel", description="Send ticket panel")
+async def ticket_panel(interaction: discord.Interaction):
+
+    if interaction.user.id != OWNER_ID:
+        return await interaction.response.send_message(
+            "❌ Owner only.",
+            ephemeral=True
+        )
+
     embed = discord.Embed(
-        title="🎫 Ticket System",
+        title="🎫 SUPPORT CENTER",
         description=(
-            "Choose an option:\n\n"
+            "Click a button below to create a ticket:\n\n"
             "💼 Buy Adminship – Apply for admin\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report"
+            "🚨 Report – Private report "
         ),
         color=discord.Color.blurple()
     )
 
-    await ctx.send(embed=embed, view=TicketView())
+    await interaction.response.send_message(embed=embed, view=TicketView())
 
 
 # ==========================================
