@@ -197,6 +197,7 @@ class CloseView(discord.ui.View):
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.channel.delete()
 
+
 # =========================
 # TICKET SYSTEM
 # =========================
@@ -275,6 +276,11 @@ class TicketView(discord.ui.View):
             interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
+        # Optional: allow owner only to see
+        owner = interaction.guild.get_member(OWNER_ID)
+        if owner:
+            overwrites[owner] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+
         await self.create_ticket(
             interaction,
             REPORT_CATEGORY_ID,
@@ -283,7 +289,7 @@ class TicketView(discord.ui.View):
             overwrites
         )
 
-    # 💼 ADMINSHIP (FIXED INDENTATION)
+    # 💼 ADMINSHIP
     @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
     async def adminship(self, interaction: discord.Interaction, button: discord.ui.Button):
 
@@ -292,6 +298,10 @@ class TicketView(discord.ui.View):
             interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
+        owner = interaction.guild.get_member(OWNER_ID)
+        if owner:
+            overwrites[owner] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+
         await self.create_ticket(
             interaction,
             ADMINSHIP_CATEGORY_ID,
@@ -299,6 +309,8 @@ class TicketView(discord.ui.View):
             "💼 Adminship request created.",
             overwrites
         )
+
+
 # =========================
 # PANEL COMMAND
 # =========================
@@ -317,31 +329,7 @@ async def ticket_panel(interaction: discord.Interaction):
             "Click a button below to create a ticket:\n\n"
             "💼 Buy Adminship – Apply for admin\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report (owner only can see)"
-        ),
-        color=discord.Color.blurple()
-    )
-
-    await interaction.response.send_message(embed=embed, view=TicketView())
-# =========================
-# PANEL COMMAND
-# =========================
-@bot.tree.command(name="ticket_panel", description="Send ticket panel")
-async def ticket_panel(interaction: discord.Interaction):
-
-    if interaction.user.id != OWNER_ID:
-        return await interaction.response.send_message(
-            "❌ Owner only.",
-            ephemeral=True
-        )
-
-    embed = discord.Embed(
-        title="🎫 SUPPORT CENTER",
-        description=(
-            "Click a button below to create a ticket:\n\n"
-            "💼 Buy Adminship – Apply for admin\n"
-            "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report (owner only can see)"
+            "🚨 Report – Private report"
         ),
         color=discord.Color.blurple()
     )
