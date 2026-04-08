@@ -199,17 +199,37 @@ async def create_ticket(interaction, category_id, t_type, msg, perms):
 
     await interaction.response.defer(ephemeral=True)
 
+    # ✅ FIX: get category safely
     category = interaction.guild.get_channel(category_id)
+
+    if category is None:
+        return await interaction.followup.send(
+            "❌ Category not found or bot has no access.",
+            ephemeral=True
+        )
+
+    # ✅ FIX: clean username
+    safe_name = interaction.user.name.lower().replace(" ", "-")
+
+    # ✅ FIX: create channel properly
     channel = await interaction.guild.create_text_channel(
-        name=f"{t_type}-{interaction.user.name}",
+        name=f"{t_type}-{safe_name}",
         category=category,
         overwrites=perms
     )
 
     active_tickets[uid][t_type] = channel
 
-    await channel.send(f"{interaction.user.mention} {msg}", view=CloseView(t_type))
-    await interaction.followup.send(f"✅ {channel.mention}", ephemeral=True)
+    await channel.send(
+        f"{interaction.user.mention} {msg}",
+        view=CloseView(t_type)
+    )
+
+    await interaction.followup.send(
+        f"✅ {channel.mention}",
+        ephemeral=True
+    )
+
 
 class CloseView(discord.ui.View):
     def __init__(self, t_type):
@@ -219,17 +239,19 @@ class CloseView(discord.ui.View):
     @discord.ui.button(
         label="🔒 Close",
         style=discord.ButtonStyle.red,
-        custom_id="close_ticket"  # ✅ REQUIRED
+        custom_id="close_ticket"
     )
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         uid = interaction.user.id
 
         if uid in active_tickets and self.t_type in active_tickets[uid]:
             del active_tickets[uid][self.t_type]
+
             if not active_tickets[uid]:
                 del active_tickets[uid]
 
         await interaction.channel.delete()
+
 
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -238,7 +260,8 @@ class TicketView(discord.ui.View):
     def perms(self, i):
         return {
             i.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            i.user: discord.PermissionOverwrite(view_channel=True)
+            i.user: discord.PermissionOverwrite(view_channel=True),
+            i.guild.me: discord.PermissionOverwrite(view_channel=True)  # ✅ IMPORTANT
         }
 
     @discord.ui.button(
@@ -247,7 +270,13 @@ class TicketView(discord.ui.View):
         custom_id="ticket_buy"
     )
     async def buy(self, i: discord.Interaction, b: discord.ui.Button):
-        await create_ticket(i, BUY_CATEGORY_ID, "buy", "💰 Buy ticket created.", self.perms(i))
+        await create_ticket(
+            i,
+            BUY_CATEGORY_ID,
+            "buy",
+            "💰 Buy ticket created.",
+            self.perms(i)
+        )
 
     @discord.ui.button(
         label="🚨 Report",
@@ -261,10 +290,17 @@ class TicketView(discord.ui.View):
         overwrites = {
             i.guild.default_role: discord.PermissionOverwrite(view_channel=False),
             i.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-            owner: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+            owner: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            i.guild.me: discord.PermissionOverwrite(view_channel=True)  # ✅ IMPORTANT
         }
 
-        await create_ticket(i, REPORT_CATEGORY_ID, "report", "🚨 Private report created.", overwrites)
+        await create_ticket(
+            i,
+            REPORT_CATEGORY_ID,
+            "report",
+            "🚨 Private report created.",
+            overwrites
+        )
 
     @discord.ui.button(
         label="💼 Admin",
@@ -272,7 +308,13 @@ class TicketView(discord.ui.View):
         custom_id="ticket_admin"
     )
     async def admin(self, i: discord.Interaction, b: discord.ui.Button):
-        await create_ticket(i, ADMINSHIP_CATEGORY_ID, "admin", "💼 Admin request created.", self.perms(i))
+        await create_ticket(
+            i,
+            ADMINSHIP_CATEGORY_ID,
+            "admin",
+            "💼 Admin request created.",
+            self.perms(i)
+        )
 # =========================
 # PANEL COMMAND
 # =========================
