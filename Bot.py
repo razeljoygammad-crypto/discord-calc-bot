@@ -231,31 +231,35 @@ async def create_ticket(interaction, category_id, t_type, msg, perms):
     )
 
 
-class CloseView(discord.ui.View):
-    def __init__(self, t_type):
-        super().__init__(timeout=None)
-        self.t_type = t_type
+class CloseConfirmView(discord.ui.View):
+    def __init__(self, author):
+        super().__init__(timeout=30)
+        self.author = author
 
-    @discord.ui.button(
-        label="🔒 Close",
-        style=discord.ButtonStyle.red,
-        custom_id="close_ticket"
-    )
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        uid = interaction.user.id
+    @discord.ui.button(label="✅ Confirm Close", style=discord.ButtonStyle.red)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        if uid in active_tickets and self.t_type in active_tickets[uid]:
-            del active_tickets[uid][self.t_type]
+        # Only ticket owner can confirm
+        if interaction.user != self.author:
+            return await interaction.response.send_message(
+                "❌ Only the ticket owner can close this.",
+                ephemeral=True
+            )
 
-            if not active_tickets[uid]:
-                del active_tickets[uid]
+        await interaction.response.send_message("🔒 Closing ticket...", ephemeral=True)
+        await interaction.channel.delete()
 
-        # 🔥 Send confirmation buttons instead of deleting
-        await interaction.response.send_message(
-            "⚠️ Are you sure you want to close this ticket?",
-            view=CloseConfirmView(interaction.user),
-            ephemeral=True
-        )
+    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.gray)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user != self.author:
+            return await interaction.response.send_message(
+                "❌ Only the ticket owner can cancel.",
+                ephemeral=True
+            )
+
+        await interaction.response.send_message("❎ Cancelled.", ephemeral=True)
+        self.stop()
 
 
 class TicketView(discord.ui.View):
