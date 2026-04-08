@@ -71,64 +71,70 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
     current_xp = discord.ui.TextInput(label='Current XP', required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
-        try:
-            start = int(self.start_lvl.value)
-            target = int(self.target_lvl.value)
-            xp_owned = int(self.current_xp.value.strip() or 0)
-        except:
-            return await interaction.response.send_message("❌ Numbers only.", ephemeral=True)
+    try:
+        start = int(self.start_lvl.value)
+        target = int(self.target_lvl.value)
+        xp_owned = int(self.current_xp.value.strip() or 0)
+    except:
+        return await interaction.response.send_message("❌ Numbers only.", ephemeral=True)
 
-        total_xp = 0
-        for lvl in range(start, target):
-            total_xp += 50 * (lvl * lvl + 2)
+    total_xp = 0
+    for lvl in range(start, target):
+        total_xp += 50 * (lvl * lvl + 2)
 
-        total_xp = max(0, total_xp - xp_owned)
+    total_xp = max(0, total_xp - xp_owned)
 
-        MINI = 125_000
-        SMALL = 250_000
-        MED = 500_000
-        VAST = 1_000_000
+    MINI = 125_000
+    SMALL = 250_000
+    MED = 500_000
+    VAST = 1_000_000
 
-        remaining = total_xp
+    remaining = total_xp
 
-        vast = remaining // VAST
-        remaining %= VAST
+    vast = remaining // VAST
+    remaining %= VAST
 
-        med = remaining // MED
-        remaining %= MED
+    med = remaining // MED
+    remaining %= MED
 
-        small = remaining // SMALL
-        remaining %= SMALL
+    small = remaining // SMALL
+    remaining %= SMALL
 
-        mini = remaining // MINI
-        if remaining % MINI > 0:
-            mini += 1
+    mini = remaining // MINI
+    if remaining % MINI > 0:
+        mini += 1
 
-        total_cost = (mini * 7) + (small * 12) + (med * 18) + (vast * 34)
+    total_cost = (mini * 7) + (small * 12) + (med * 18) + (vast * 34)
 
-        total_time = (mini * 5) + (small * 10) + (med * 25) + (vast * 30)
+    total_time = (mini * 5) + (small * 10) + (med * 25) + (vast * 30)
 
-        hours = total_time // 60
-        minutes = total_time % 60
-        
-        embed.add_field(name="📊 Levels", value=f"{start} ➜ {target}", inline=False)
-        embed.add_field(name="📈 Total XP Needed", value=f"{total_xp:,}", inline=False)
+    hours = total_time // 60
+    minutes = total_time % 60
 
-        packs_text = ""
-        if vast:
-            packs_text += f"📦 {vast}x Vast Pack (34💎)\n"
-        if mediant:
-            packs_text += f"📦 {mediant}x Mediant Pack (18💎)\n"
-        if small:
-            packs_text += f"📦 {small}x Small Pack (12💎)\n"
-        if mini:
-            packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
+    # ✅ CREATE EMBED FIRST
+    embed = discord.Embed(
+        title="XP & Pack Calculator",
+        color=discord.Color.blurple()
+    )
 
-        embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
-        embed.add_field(name="💰 Total Cost", value=f"{total_dl} 💎 Diamond Locks", inline=False)
-        embed.add_field(name="⏱️ Estimated Time", value=f"{hours}h {minutes}m", inline=False)
+    embed.add_field(name="📊 Levels", value=f"{start} ➜ {target}", inline=False)
+    embed.add_field(name="📈 Total XP Needed", value=f"{total_xp:,}", inline=False)
 
-        await interaction.response.send_message(embed=embed)
+    packs_text = ""
+    if vast:
+        packs_text += f"📦 {vast}x Vast Pack (34💎)\n"
+    if med:
+        packs_text += f"📦 {med}x Med Pack (18💎)\n"
+    if small:
+        packs_text += f"📦 {small}x Small Pack (12💎)\n"
+    if mini:
+        packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
+
+    embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
+    embed.add_field(name="💰 Total Cost", value=f"{total_cost} 💎 Diamond Locks", inline=False)
+    embed.add_field(name="⏱️ Estimated Time", value=f"{hours}h {minutes}m", inline=False)
+
+    await interaction.response.send_message(embed=embed)
 
 # =========================
 # CALC COMMAND
