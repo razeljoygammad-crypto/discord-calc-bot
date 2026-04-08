@@ -58,9 +58,7 @@ class CalculatorBot(discord.Client):
 
     async def setup_hook(self):
     await self.tree.sync()
-    self.add_view(CloseView())  # 🔥 IMPORTANT
-    self.add_view(TicketView()) # 🔥 for ticket buttons
-   
+    
     async def on_ready(self):
         print(f"✅ Logged in as {self.user}")
 
