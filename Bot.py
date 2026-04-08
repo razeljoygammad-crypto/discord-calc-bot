@@ -302,4 +302,7 @@ async def ticket_panel(interaction: discord.Interaction):
 # RUN
 # =========================
 keep_alive()
+
+bot = Bot()  # ✅ ONLY ONE INSTANCE
+
 bot.run(os.getenv("DISCORD_TOKEN"))
