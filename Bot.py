@@ -231,20 +231,48 @@ async def create_ticket(interaction, category_id, t_type, msg, perms):
     )
 
 
+class CloseView(discord.ui.View):
+    def __init__(self, t_type):
+        super().__init__(timeout=None)
+        self.t_type = t_type
+
+    @discord.ui.button(
+        label="🔒 Close",
+        style=discord.ButtonStyle.red,
+        custom_id="close_ticket"
+    )
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        # Show confirmation instead of deleting
+        await interaction.response.send_message(
+            "⚠️ Are you sure you want to close this ticket?",
+            view=CloseConfirmView(interaction.user, self.t_type),
+            ephemeral=True
+        )
+
 class CloseConfirmView(discord.ui.View):
-    def __init__(self, author):
+    def __init__(self, author, t_type):
         super().__init__(timeout=30)
         self.author = author
+        self.t_type = t_type
 
     @discord.ui.button(label="✅ Confirm Close", style=discord.ButtonStyle.red)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        # Only ticket owner can confirm
         if interaction.user != self.author:
             return await interaction.response.send_message(
                 "❌ Only the ticket owner can close this.",
                 ephemeral=True
             )
+
+        uid = interaction.user.id
+
+        # ✅ FIX: remove from active tickets BEFORE deleting
+        if uid in active_tickets and self.t_type in active_tickets[uid]:
+            del active_tickets[uid][self.t_type]
+
+            if not active_tickets[uid]:
+                del active_tickets[uid]
 
         await interaction.response.send_message("🔒 Closing ticket...", ephemeral=True)
         await interaction.channel.delete()
@@ -259,7 +287,6 @@ class CloseConfirmView(discord.ui.View):
             )
 
         await interaction.response.send_message("❎ Cancelled.", ephemeral=True)
-        self.stop()
 
 
 class TicketView(discord.ui.View):
