@@ -19,15 +19,15 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot is online and running."
+    return "Bot is alive!"
 
-def run_server():
+def run():
     app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
-    server_thread = Thread(target=run_server)
-    server_thread.daemon = True
-    server_thread.start()
+    t = Thread(target=run)
+    t.start()
+keep_alive()
 
 # ==========================================
 # 2. DISCORD BOT SETUP
