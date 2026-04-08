@@ -9,27 +9,22 @@ load_dotenv()
 # =========================
 # 🔒 CONFIG
 # =========================
-OWNER_ID = 923096413934616596  # ⬅️ YOUR ID
+OWNER_ID = 923096413934616596
 
 SUPPORT_CATEGORY_ID = 1466995318246609069
 REPORT_CATEGORY_ID = 1491264107364745216
 BUY_CATEGORY_ID = 1491264209969872997
 ADMINSHIP_CATEGORY_ID = 1491264151786360855
 
-# ==========================================
-# 🔒 ALLOWED CATEGORY ID
-# ==========================================
-ALLOWED_CATEGORY_ID = 1487387217017045134  # ⬅️ REPLACE THIS
+ALLOWED_CATEGORY_ID = 1487387217017045134
 
 # =========================
 # STORAGE
 # =========================
-active_tickets = {}
-ticket_counter = 0
+active_tickets = {}  
+# format:
+# { user_id: { "buy": channel, "report": channel, "adminship": channel } }
 
-def save_counter(value):
-    global ticket_counter
-    ticket_counter = value
 
 # ==========================================
 # 1. KEEP-ALIVE WEB SERVER
@@ -192,11 +187,23 @@ async def calc(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
 # =========================
-# CREATE TICKET FUNCTION
+# CREATE TICKET
 # =========================
 async def create_ticket(interaction, category_id, ticket_type, message, overwrites):
 
-    # IMPORTANT: respond immediately
+    user_id = interaction.user.id
+
+    if user_id not in active_tickets:
+        active_tickets[user_id] = {}
+
+    # ❌ prevent duplicate SAME TYPE
+    if ticket_type in active_tickets[user_id]:
+        existing_channel = active_tickets[user_id][ticket_type]
+        return await interaction.response.send_message(
+            f"❌ You already have an open {ticket_type} ticket: {existing_channel.mention}",
+            ephemeral=True
+        )
+
     await interaction.response.defer(ephemeral=True)
 
     category = interaction.guild.get_channel(category_id)
@@ -210,60 +217,64 @@ async def create_ticket(interaction, category_id, ticket_type, message, overwrit
         overwrites=overwrites
     )
 
-    await channel.send(f"{interaction.user.mention} {message}")
+    active_tickets[user_id][ticket_type] = channel
+
+    await channel.send(
+        f"{interaction.user.mention} {message}",
+        view=CloseView(ticket_type)
+    )
 
     await interaction.followup.send(
         f"✅ Ticket created: {channel.mention}",
         ephemeral=True
     )
 
+# =========================
+# CLOSE BUTTON
+# =========================
+class CloseView(discord.ui.View):
+    def __init__(self, ticket_type):
+        super().__init__(timeout=None)
+        self.ticket_type = ticket_type
+
+    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.red)
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user_id = interaction.user.id
+
+        if user_id in active_tickets:
+            if self.ticket_type in active_tickets[user_id]:
+                del active_tickets[user_id][self.ticket_type]
+
+            if not active_tickets[user_id]:
+                del active_tickets[user_id]
+
+        await interaction.channel.delete()
 
 # =========================
-# TICKET VIEW (BUTTONS)
+# TICKET BUTTONS
 # =========================
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    def base_overwrites(self, interaction):
+    def perms(self, interaction):
         return {
             interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
             interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
-    # 💰 BUY
     @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.green)
     async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await create_ticket(
-            interaction,
-            BUY_CATEGORY_ID,
-            "buy",
-            "💰 Buy ticket created. Staff will assist you.",
-            self.base_overwrites(interaction)
-        )
+        await create_ticket(interaction, BUY_CATEGORY_ID, "buy", "💰 Buy ticket created.", self.perms(interaction))
 
-    # 🚨 REPORT
     @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
     async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await create_ticket(
-            interaction,
-            REPORT_CATEGORY_ID,
-            "report",
-            "🚨 Report ticket created.",
-            self.base_overwrites(interaction)
-        )
+        await create_ticket(interaction, REPORT_CATEGORY_ID, "report", "🚨 Report ticket created.", self.perms(interaction))
 
-    # 💼 ADMINSHIP
     @discord.ui.button(label="💼 Adminship", style=discord.ButtonStyle.blurple)
     async def adminship(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await create_ticket(
-            interaction,
-            ADMINSHIP_CATEGORY_ID,
-            "adminship",
-            "💼 Adminship request created.",
-            self.base_overwrites(interaction)
-        )
-
+        await create_ticket(interaction, ADMINSHIP_CATEGORY_ID, "adminship", "💼 Adminship request created.", self.perms(interaction))
 
 # =========================
 # PANEL COMMAND
@@ -272,34 +283,19 @@ class TicketView(discord.ui.View):
 async def ticket_panel(interaction: discord.Interaction):
 
     if interaction.user.id != OWNER_ID:
-        return await interaction.response.send_message(
-            "❌ Owner only.",
-            ephemeral=True
-        )
+        return await interaction.response.send_message("❌ Owner only.", ephemeral=True)
 
     embed = discord.Embed(
         title="🎫 SUPPORT CENTER",
         description=(
-            "Click a button below:\n\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Report something\n"
+            "🚨 Report – Report issue\n"
             "💼 Adminship – Apply for admin"
         ),
         color=discord.Color.blurple()
     )
 
     await interaction.response.send_message(embed=embed, view=TicketView())
-
-
-# =========================
-# REGISTER VIEW (IMPORTANT)
-# =========================
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-
-    # VERY IMPORTANT: keeps buttons working after restart
-    bot.add_view(TicketView())
 
 
 # ==========================================
