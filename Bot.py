@@ -183,7 +183,7 @@ async def calc(interaction: discord.Interaction):
     await interaction.response.send_modal(CalculatorModal())
 
 # =========================
-# TICKET SYSTEM
+# CREATE TICKET FUNCTION
 # =========================
 async def create_ticket(interaction, category_id, t_type, msg, perms):
     uid = interaction.user.id
@@ -191,6 +191,7 @@ async def create_ticket(interaction, category_id, t_type, msg, perms):
     if uid not in active_tickets:
         active_tickets[uid] = {}
 
+    # Prevent duplicate ticket type
     if t_type in active_tickets[uid]:
         return await interaction.response.send_message(
             f"❌ You already have a {t_type} ticket!",
@@ -199,42 +200,60 @@ async def create_ticket(interaction, category_id, t_type, msg, perms):
 
     await interaction.response.defer(ephemeral=True)
 
-    # ✅ FIX: get category safely
-    category = interaction.guild.get_channel(category_id)
-
-    if category is None:
+    # ✅ SAFE CATEGORY FETCH
+    try:
+        category = await interaction.guild.fetch_channel(category_id)
+    except:
         return await interaction.followup.send(
-            "❌ Category not found or bot has no access.",
+            "❌ Category not found or no access.",
             ephemeral=True
         )
 
-    # ✅ FIX: clean username
+    # Clean username
     safe_name = interaction.user.name.lower().replace(" ", "-")
 
-    # ✅ FIX: create channel properly
-    channel = await interaction.guild.create_text_channel(
-        name=f"{t_type}-{safe_name}",
-        category=category,
-        overwrites=perms
-    )
+    # Prevent duplicate channel (important fix)
+    for channel in interaction.guild.text_channels:
+        if channel.name == f"{t_type}-{safe_name}":
+            return await interaction.followup.send(
+                "❌ Ticket already exists.",
+                ephemeral=True
+            )
+
+    # Create ticket channel
+    try:
+        channel = await interaction.guild.create_text_channel(
+            name=f"{t_type}-{safe_name}",
+            category=category,
+            overwrites=perms
+        )
+    except discord.Forbidden:
+        return await interaction.followup.send(
+            "❌ I don't have permission to create channels.",
+            ephemeral=True
+        )
 
     active_tickets[uid][t_type] = channel
 
     await channel.send(
         f"{interaction.user.mention} {msg}",
-        view=CloseView(t_type)
+        view=CloseView(t_type, interaction.user.id)
     )
 
     await interaction.followup.send(
-        f"✅ {channel.mention}",
+        f"✅ Ticket created: {channel.mention}",
         ephemeral=True
     )
 
 
+# =========================
+# CLOSE BUTTON
+# =========================
 class CloseView(discord.ui.View):
-    def __init__(self, t_type):
+    def __init__(self, t_type, owner_id):
         super().__init__(timeout=None)
         self.t_type = t_type
+        self.owner_id = owner_id
 
     @discord.ui.button(
         label="🔒 Close",
@@ -243,23 +262,26 @@ class CloseView(discord.ui.View):
     )
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        # Show confirmation instead of deleting
         await interaction.response.send_message(
             "⚠️ Are you sure you want to close this ticket?",
-            view=CloseConfirmView(interaction.user, self.t_type),
+            view=CloseConfirmView(self.owner_id, self.t_type),
             ephemeral=True
         )
 
+
+# =========================
+# CONFIRM CLOSE
+# =========================
 class CloseConfirmView(discord.ui.View):
-    def __init__(self, author, t_type):
+    def __init__(self, owner_id, t_type):
         super().__init__(timeout=30)
-        self.author = author
+        self.owner_id = owner_id
         self.t_type = t_type
 
     @discord.ui.button(label="✅ Confirm Close", style=discord.ButtonStyle.red)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        if interaction.user != self.author:
+        if interaction.user.id != self.owner_id:
             return await interaction.response.send_message(
                 "❌ Only the ticket owner can close this.",
                 ephemeral=True
@@ -267,7 +289,7 @@ class CloseConfirmView(discord.ui.View):
 
         uid = interaction.user.id
 
-        # ✅ FIX: remove from active tickets BEFORE deleting
+        # Remove from active tickets
         if uid in active_tickets and self.t_type in active_tickets[uid]:
             del active_tickets[uid][self.t_type]
 
@@ -275,12 +297,20 @@ class CloseConfirmView(discord.ui.View):
                 del active_tickets[uid]
 
         await interaction.response.send_message("🔒 Closing ticket...", ephemeral=True)
-        await interaction.channel.delete()
+
+        # Safe delete
+        try:
+            await interaction.channel.delete()
+        except discord.Forbidden:
+            await interaction.followup.send(
+                "❌ Missing permission to delete this channel.",
+                ephemeral=True
+            )
 
     @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.gray)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        if interaction.user != self.author:
+        if interaction.user.id != self.owner_id:
             return await interaction.response.send_message(
                 "❌ Only the ticket owner can cancel.",
                 ephemeral=True
@@ -289,68 +319,61 @@ class CloseConfirmView(discord.ui.View):
         await interaction.response.send_message("❎ Cancelled.", ephemeral=True)
 
 
+# =========================
+# TICKET PANEL
+# =========================
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    def perms(self, i):
+    def perms(self, interaction):
         return {
-            i.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            i.user: discord.PermissionOverwrite(view_channel=True),
-            i.guild.me: discord.PermissionOverwrite(view_channel=True)  # ✅ IMPORTANT
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            interaction.guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
-    @discord.ui.button(
-        label="💰 Buy",
-        style=discord.ButtonStyle.green,
-        custom_id="ticket_buy"
-    )
-    async def buy(self, i: discord.Interaction, b: discord.ui.Button):
+    @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.green, custom_id="ticket_buy")
+    async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
         await create_ticket(
-            i,
+            interaction,
             BUY_CATEGORY_ID,
             "buy",
             "💰 Buy ticket created.",
-            self.perms(i)
+            self.perms(interaction)
         )
 
-    @discord.ui.button(
-        label="🚨 Report",
-        style=discord.ButtonStyle.red,
-        custom_id="ticket_report"
-    )
-    async def report(self, i: discord.Interaction, b: discord.ui.Button):
+    @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red, custom_id="ticket_report")
+    async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        owner = i.guild.get_member(OWNER_ID) or await i.guild.fetch_member(OWNER_ID)
+        owner = interaction.guild.get_member(OWNER_ID)
 
         overwrites = {
-            i.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            i.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-            owner: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-            i.guild.me: discord.PermissionOverwrite(view_channel=True)  # ✅ IMPORTANT
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            owner: discord.PermissionOverwrite(view_channel=True, send_messages=True) if owner else None,
+            interaction.guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
         await create_ticket(
-            i,
+            interaction,
             REPORT_CATEGORY_ID,
             "report",
             "🚨 Private report created.",
             overwrites
         )
 
-    @discord.ui.button(
-        label="💼 Admin",
-        style=discord.ButtonStyle.blurple,
-        custom_id="ticket_admin"
-    )
-    async def admin(self, i: discord.Interaction, b: discord.ui.Button):
+    @discord.ui.button(label="💼 Admin", style=discord.ButtonStyle.blurple, custom_id="ticket_admin")
+    async def admin(self, interaction: discord.Interaction, button: discord.ui.Button):
         await create_ticket(
-            i,
+            interaction,
             ADMINSHIP_CATEGORY_ID,
             "admin",
             "💼 Admin request created.",
-            self.perms(i)
+            self.perms(interaction)
         )
+
+
 # =========================
 # PANEL COMMAND
 # =========================
@@ -367,9 +390,9 @@ async def ticket_panel(interaction: discord.Interaction):
         title="🎫 SUPPORT CENTER",
         description=(
             "Click a button below to create a ticket:\n\n"
-            "💼 Buy Adminship – Apply for admin\n"
+            "💼 Admin – Apply for admin\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report "
+            "🚨 Report – Private report"
         ),
         color=discord.Color.blurple()
     )
