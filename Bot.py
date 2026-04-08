@@ -54,49 +54,132 @@ class Bot(discord.Client):
 
 bot = Bot()
 
-# =========================
-# CALCULATOR
-# =========================
-class CalculatorModal(discord.ui.Modal, title="XP Calculator"):
-    start_lvl = discord.ui.TextInput(label="Start Level")
-    target_lvl = discord.ui.TextInput(label="Target Level")
-    current_xp = discord.ui.TextInput(label="Current XP", required=False)
+# ==========================================
+# 3. CALCULATOR MODAL
+# ==========================================
+class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
+
+    start_lvl = discord.ui.TextInput(
+        label='Start Level',
+        placeholder='e.g. 1'
+    )
+
+    target_lvl = discord.ui.TextInput(
+        label='Target Level',
+        placeholder='e.g. 40'
+    )
+
+    current_xp = discord.ui.TextInput(
+        label='Current XP',
+        required=False,
+        placeholder='0'
+    )
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
             start = int(self.start_lvl.value)
             target = int(self.target_lvl.value)
-            xp = int(self.current_xp.value or 0)
-        except:
-            return await interaction.response.send_message("❌ Numbers only.", ephemeral=True)
+            xp_owned = int(self.current_xp.value.strip() or 0)
+        except ValueError:
+            return await interaction.response.send_message(
+                "❌ Please use numbers only.", ephemeral=True
+            )
 
-        total = sum(50 * (lvl * lvl + 2) for lvl in range(start, target))
-        total = max(0, total - xp)
+        # ==========================================
+        # XP CALCULATION
+        # ==========================================
+        total_xp = 0
+        for lvl in range(start, target):
+            total_xp += 50 * (lvl * lvl + 2)
 
-        MINI, SMALL, MED, VAST = 125000, 250000, 500000, 1000000
-        r = total
+        total_xp = max(0, total_xp - xp_owned)
 
-        vast = r // VAST; r %= VAST
-        med = r // MED; r %= MED
-        small = r // SMALL; r %= SMALL
-        mini = r // MINI + (1 if r % MINI else 0)
+        # ==========================================
+        # PACK CALCULATION
+        # ==========================================
+        MINI_XP = 125_000
+        SMALL_XP = 250_000
+        MEDIANT_XP = 500_000
+        VAST_XP = 1_000_000
 
-        cost = mini*7 + small*12 + med*18 + vast*34
-        time = mini*5 + small*10 + med*25 + vast*30
-        h, m = divmod(time, 60)
+        remaining = total_xp
 
-        embed = discord.Embed(title="XP Calculator", color=discord.Color.blurple())
-        embed.add_field(name="Levels", value=f"{start} → {target}", inline=False)
-        embed.add_field(name="XP Needed", value=f"{total:,}", inline=False)
-        embed.add_field(name="Cost", value=f"{cost} 💎", inline=False)
-        embed.add_field(name="Time", value=f"{h}h {m}m", inline=False)
+        vast = remaining // VAST_XP
+        remaining %= VAST_XP
+
+        mediant = remaining // MEDIANT_XP
+        remaining %= MEDIANT_XP
+
+        small = remaining // SMALL_XP
+        remaining %= SMALL_XP
+
+        mini = remaining // MINI_XP
+        if remaining % MINI_XP > 0:
+            mini += 1
+
+        # ==========================================
+        # COST
+        # ==========================================
+        total_dl = (mini * 7) + (small * 12) + (mediant * 17) + (vast * 30)
+
+        # ==========================================
+        # TIME
+        # ==========================================
+        total_time = (
+            (mini * 5) +
+            (small * 10) +
+            (mediant * 25) +
+            (vast * 30)
+        )
+
+        hours = total_time // 60
+        minutes = total_time % 60
+
+        # ==========================================
+        # EMBED
+        # ==========================================
+        embed = discord.Embed(
+            title="XP & Pack Calculator",
+            color=discord.Color.blurple()
+        )
+
+        embed.add_field(name="📊 Levels", value=f"{start} ➜ {target}", inline=False)
+        embed.add_field(name="📈 Total XP Needed", value=f"{total_xp:,}", inline=False)
+
+        packs_text = ""
+        if vast:
+            packs_text += f"📦 {vast}x Vast Pack (30💎)\n"
+        if mediant:
+            packs_text += f"📦 {mediant}x Mediant Pack (17💎)\n"
+        if small:
+            packs_text += f"📦 {small}x Small Pack (12💎)\n"
+        if mini:
+            packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
+
+        embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
+        embed.add_field(name="💰 Total Cost", value=f"{total_dl} 💎 Diamond Locks", inline=False)
+        embed.add_field(name="⏱️ Estimated Time", value=f"{hours}h {minutes}m", inline=False)
 
         await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="calc")
+# ==========================================
+# 4. BOT
+# ==========================================
+bot = CalculatorBot()
+
+# 🔒 CATEGORY CHECK FOR COMMAND
+@bot.tree.command(name="calc", description="Open XP Calculator")
 async def calc(interaction: discord.Interaction):
-    if not interaction.channel or not interaction.channel.category or interaction.channel.category.id != ALLOWED_CATEGORY_ID:
-        return await interaction.response.send_message("❌ Wrong channel.", ephemeral=True)
+
+    if (
+        interaction.channel is None or
+        interaction.channel.category is None or
+        interaction.channel.category.id != ALLOWED_CATEGORY_ID
+    ):
+        return await interaction.response.send_message(
+            "❌ This command can only be used in the allowed category.",
+            ephemeral=True
+        )
 
     await interaction.response.send_modal(CalculatorModal())
 
