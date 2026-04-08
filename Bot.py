@@ -6,7 +6,6 @@ from flask import Flask
 from threading import Thread
 
 load_dotenv()
-
 # =========================
 # 🔒 CONFIG
 # =========================
@@ -16,14 +15,6 @@ SUPPORT_CATEGORY_ID = 1466995318246609069
 REPORT_CATEGORY_ID = 1491264107364745216
 BUY_CATEGORY_ID = 1491264209969872997
 ADMINSHIP_CATEGORY_ID = 1491264151786360855
-
-# =========================
-# SETUP
-# =========================
-intents = discord.Intents.default()
-intents.guilds = True
-intents.messages = True
-intents.message_content = True
 
 # ==========================================
 # 🔒 ALLOWED CATEGORY ID
@@ -199,6 +190,15 @@ async def calc(interaction: discord.Interaction):
         )
 
     await interaction.response.send_modal(CalculatorModal())
+
+
+# =========================
+# SETUP
+# =========================
+intents = discord.Intents.default()
+intents.guilds = True
+intents.messages = True
+intents.message_content = True
 
 # =========================
 # CLOSE BUTTON
