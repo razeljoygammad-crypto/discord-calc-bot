@@ -250,7 +250,12 @@ class CloseView(discord.ui.View):
             if not active_tickets[uid]:
                 del active_tickets[uid]
 
-        await interaction.channel.delete()
+        # 🔥 Send confirmation buttons instead of deleting
+        await interaction.response.send_message(
+            "⚠️ Are you sure you want to close this ticket?",
+            view=CloseConfirmView(interaction.user),
+            ephemeral=True
+        )
 
 
 class TicketView(discord.ui.View):
