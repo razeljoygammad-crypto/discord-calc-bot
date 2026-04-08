@@ -7,10 +7,18 @@ from threading import Thread
 
 load_dotenv()
 
-# ==========================================
-# 🔒 ALLOWED CATEGORY ID
-# ==========================================
-ALLOWED_CATEGORY_ID = 1487387217017045134  # ⬅️ REPLACE THIS
+# =========================
+# CONFIG 
+# =========================
+
+OWNER_ID = 123456789  # ⬅️ YOUR ID
+
+SUPPORT_CATEGORY_ID = 1466995318246609069
+REPORT_CATEGORY_ID = 1491264107364745216
+BUY_CATEGORY_ID = 1491264209969872997
+ADMINSHIP_CATEGORY_ID = 1491264151786360855
+
+active_tickets = {}
 
 # ==========================================
 # 1. KEEP-ALIVE WEB SERVER
@@ -171,6 +179,139 @@ async def calc(interaction: discord.Interaction):
         )
 
     await interaction.response.send_modal(CalculatorModal())
+
+# ==========================================
+# OWNER CONFIRM VIEW
+# ==========================================
+class OwnerConfirmView(discord.ui.View):
+    def __init__(self, channel):
+        super().__init__(timeout=60)
+        self.channel = channel
+
+    @discord.ui.button(label="✅ Approve Close", style=discord.ButtonStyle.green)
+    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user.id != OWNER_ID:
+            return await interaction.response.send_message(
+                "❌ Only the owner can approve.",
+                ephemeral=True
+            )
+
+        await interaction.response.send_message("🔒 Ticket closed.")
+        active_tickets.pop(self.channel.id, None)
+        await self.channel.delete()
+
+    @discord.ui.button(label="❌ Deny", style=discord.ButtonStyle.red)
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user.id != OWNER_ID:
+            return await interaction.response.send_message(
+                "❌ Only the owner can deny.",
+                ephemeral=True
+            )
+
+        await interaction.response.send_message("❌ Close request denied.", ephemeral=True)
+
+
+# ==========================================
+# TICKET VIEW
+# ==========================================
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    async def create_ticket(self, interaction, category_id, ticket_type):
+        guild = interaction.guild
+        user = interaction.user
+
+        if user.id in active_tickets:
+            return await interaction.response.send_message(
+                "❌ You already have a ticket open!",
+                ephemeral=True
+            )
+
+        category = guild.get_channel(category_id)
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+        }
+
+        channel = await guild.create_text_channel(
+            name=f"{ticket_type}-{user.name}",
+            category=category,
+            overwrites=overwrites
+        )
+
+        active_tickets[user.id] = channel.id
+
+        await interaction.response.send_message(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
+        )
+
+        await channel.send(
+            f"{user.mention} | {ticket_type} ticket created.",
+            view=CloseTicketView()
+        )
+
+    @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.primary)
+    async def buy_admin(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, BUY_ADMIN_CATEGORY_ID, "buy-admin")
+
+    @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.green)
+    async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, BUY_CATEGORY_ID, "buy")
+
+    @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
+    async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, REPORT_CATEGORY_ID, "report")
+
+
+# ==========================================
+# CLOSE BUTTON (REQUEST OWNER)
+# ==========================================
+class CloseTicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.red)
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        owner = await interaction.client.fetch_user(OWNER_ID)
+
+        await owner.send(
+            f"📩 Close request from {interaction.user.mention}\n"
+            f"Channel: {interaction.channel.mention}",
+            view=OwnerConfirmView(interaction.channel)
+        )
+
+        await interaction.response.send_message(
+            "📨 Close request sent to the owner.",
+            ephemeral=True
+        )
+
+
+# ==========================================
+# COMMAND TO SEND PANEL
+# ==========================================
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def ticket(ctx):
+    embed = discord.Embed(
+        title="🎫 Ticket System",
+        description=(
+            "Choose an option:\n\n"
+            "💼 Buy Adminship – Apply for admin\n"
+            "💰 Buy – Purchase help\n"
+            "🚨 Report – Private report"
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await ctx.send(embed=embed, view=TicketView())
+
 
 # ==========================================
 # 5. RUN
