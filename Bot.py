@@ -267,7 +267,7 @@ class TicketView(discord.ui.View):
         )
     
 
-    # 🚨 REPORT (OWNER ONLY)
+    # 🚨 REPORT 
     @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
     async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
 
@@ -285,7 +285,7 @@ class TicketView(discord.ui.View):
             overwrites
         )
 
-    # 💼 ADMINSHIP (OWNER ONLY) @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
+    # 💼 ADMINSHIP
 @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
     async def adminship(self, interaction: discord.Interaction, button: discord.ui.Button):
 
@@ -295,13 +295,37 @@ class TicketView(discord.ui.View):
             interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
-        await self.create_ticket(
-           interaction,
-           ADMINSHIP_CATEGORY_ID,
-           "adminship",
-           "💼 Adminship request created.",
-            overwrites
+    await self.create_ticket(
+        interaction,
+        ADMINSHIP_CATEGORY_ID,
+        "adminship",
+        "💼 Adminship request created.",
+        overwrites
+    )
+# =========================
+# PANEL COMMAND
+# =========================
+@bot.tree.command(name="ticket_panel", description="Send ticket panel")
+async def ticket_panel(interaction: discord.Interaction):
+
+    if interaction.user.id != OWNER_ID:
+        return await interaction.response.send_message(
+            "❌ Owner only.",
+            ephemeral=True
         )
+
+    embed = discord.Embed(
+        title="🎫 SUPPORT CENTER",
+        description=(
+            "Click a button below to create a ticket:\n\n"
+            "💼 Buy Adminship – Apply for admin\n"
+            "💰 Buy – Purchase help\n"
+            "🚨 Report – Private report (owner only can see)"
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await interaction.response.send_message(embed=embed, view=TicketView())
 # =========================
 # PANEL COMMAND
 # =========================
