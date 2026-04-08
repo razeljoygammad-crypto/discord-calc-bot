@@ -22,13 +22,12 @@ def home():
     return "Bot is alive!"
 
 def run():
-    app.run(host='0.0.0.0', port=1000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     t = Thread(target=run)
     t.start()
-keep_alive()
-
 # ==========================================
 # 2. DISCORD BOT SETUP
 # ==========================================
@@ -175,7 +174,7 @@ async def calc(interaction: discord.Interaction):
 # ==========================================
 # 5. RUN
 # ==========================================
-keep_alive()
-
-token = os.getenv("DISCORD_TOKEN")
-bot.run(token)
+if __name__ == "__main__":
+    keep_alive()
+    token = os.getenv("DISCORD_TOKEN")
+    bot.run(token)
