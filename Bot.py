@@ -167,12 +167,26 @@ class TicketView(discord.ui.View):
     async def admin(self, i: discord.Interaction, b: discord.ui.Button):
         await create_ticket(i, ADMINSHIP_CATEGORY_ID, "admin", "Admin request created.", self.perms(i))
 
-@bot.tree.command(name="ticket_panel")
+@bot.tree.command(name="ticket_panel", description="Send ticket panel")
 async def ticket_panel(interaction: discord.Interaction):
-    if interaction.user.id != OWNER_ID:
-        return await interaction.response.send_message("❌ Owner only.", ephemeral=True)
 
-    embed = discord.Embed(title="🎫 Support Center", color=discord.Color.blurple())
+    if interaction.user.id != OWNER_ID:
+        return await interaction.response.send_message(
+            "❌ Owner only.",
+            ephemeral=True
+        )
+
+    embed = discord.Embed(
+        title="🎫 SUPPORT CENTER",
+        description=(
+            "Click a button below to create a ticket:\n\n"
+            "💼 Buy Adminship – Apply for admin\n"
+            "💰 Buy – Purchase help\n"
+            "🚨 Report – Private report (owner only can see)"
+        ),
+        color=discord.Color.blurple()
+    )
+
     await interaction.response.send_message(embed=embed, view=TicketView())
 
 # =========================
