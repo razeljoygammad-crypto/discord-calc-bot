@@ -186,10 +186,6 @@ async def calc(interaction: discord.Interaction):
 
     await interaction.response.send_modal(CalculatorModal())
 
-# ==========================================
-# 🎫 TICKET SYSTEM
-# ==========================================
-
 # =========================
 # CLOSE BUTTON
 # =========================
@@ -260,68 +256,52 @@ class TicketView(discord.ui.View):
 
         staff_role = discord.utils.get(interaction.guild.roles, name="Staff")
         if staff_role:
-            overwrites[staff_role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+               overwrites[staff_role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
 
         await self.create_ticket(
             interaction,
-            BUY_CATEGORY_ID,
-            "buy",
-            "💰 Buy ticket created. Our team will assist you.",
-            overwrites
+             BUY_CATEGORY_ID,
+              "buy",
+             "💰 Buy ticket created. Our team will assist you.",
+             overwrites
         )
+    
 
     # 🚨 REPORT (OWNER ONLY)
     @discord.ui.button(label="🚨 Report", style=discord.ButtonStyle.red)
     async def report(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        if interaction.user.id != OWNER_ID:
-            return await interaction.response.send_message(
-                "❌ Only the owner can use this.",
-                ephemeral=True
-            )
-
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(
-                view_channel=True,
-                send_messages=True
-            )
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
         await self.create_ticket(
             interaction,
             REPORT_CATEGORY_ID,
             "report",
-            "🚨 Private report (owner only).",
+            "🚨 Report ticket created.",
             overwrites
         )
 
-    # 💼 ADMINSHIP (OWNER ONLY)
-    @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
+    # 💼 ADMINSHIP (OWNER ONLY) @discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
+@discord.ui.button(label="💼 Buy Adminship", style=discord.ButtonStyle.green)
     async def adminship(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        if interaction.user.id != OWNER_ID:
-            return await interaction.response.send_message(
-                "❌ Only the owner can use this.",
-                ephemeral=True
-            )
 
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(
-                view_channel=True,
-                send_messages=True
-            )
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            interaction.guild.get_member(OWNER_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
         await self.create_ticket(
-            interaction,
-            ADMINSHIP_CATEGORY_ID,
-            "adminship",
-            "💼 Adminship request (owner only).",
+           interaction,
+           ADMINSHIP_CATEGORY_ID,
+           "adminship",
+           "💼 Adminship request created.",
             overwrites
         )
-
 # =========================
 # PANEL COMMAND
 # =========================
@@ -346,7 +326,6 @@ async def ticket_panel(interaction: discord.Interaction):
     )
 
     await interaction.response.send_message(embed=embed, view=TicketView())
-
 # ==========================================
 # 5. RUN
 # ==========================================
