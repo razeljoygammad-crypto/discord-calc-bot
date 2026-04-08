@@ -175,7 +175,7 @@ async def calc(interaction: discord.Interaction):
 # ==========================================
 # 🎫 TICKET SYSTEM
 # ==========================================
-OWNER_ID = 123456789  # ⬅️ YOUR ID
+OWNER_ID = 1409138196775702599  # ⬅️ YOUR ID
 
 SUPPORT_CATEGORY_ID = 1466995318246609069
 REPORT_CATEGORY_ID = 1491264107364745216
