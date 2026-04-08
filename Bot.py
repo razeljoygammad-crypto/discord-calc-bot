@@ -1,4 +1,5 @@
 import os
+import re
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
@@ -15,8 +16,10 @@ OWNER_ID = 923096413934616596
 REPORT_CATEGORY_ID = 1491264107364745216
 BUY_CATEGORY_ID = 1491264209969872997
 ADMINSHIP_CATEGORY_ID = 1491264151786360855
-
 ALLOWED_CATEGORY_ID = 1487387217017045134
+
+# 🔥 IMPORTANT: PUT YOUR SERVER ID HERE
+GUILD_ID = 123456789012345678  
 
 # =========================
 # STORAGE
@@ -26,7 +29,7 @@ active_tickets = {}
 # =========================
 # KEEP ALIVE
 # =========================
-app = Flask('')
+app = Flask(__name__)
 
 @app.route('/')
 def home():
@@ -46,7 +49,11 @@ class Bot(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        await self.tree.sync()
+        guild = discord.Object(id=GUILD_ID)
+
+        # 🔥 FAST SYNC (fixes command not showing)
+        await self.tree.sync(guild=guild)
+
         self.add_view(TicketView())
 
     async def on_ready(self):
@@ -165,6 +172,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
 # ==========================================
 # 4. BOT
 # ==========================================
+bot = CalculatorBot()
 
 # 🔒 CATEGORY CHECK FOR COMMAND
 @bot.tree.command(name="calc", description="Open XP Calculator")
@@ -311,9 +319,9 @@ async def ticket_panel(interaction: discord.Interaction):
         title="🎫 SUPPORT CENTER",
         description=(
             "Click a button below to create a ticket:\n\n"
-            "💼 Admin – Apply for admin\n"
+            "💼 Buy Adminship – Apply for admin\n"
             "💰 Buy – Purchase help\n"
-            "🚨 Report – Private report"
+            "🚨 Report – Private report "
         ),
         color=discord.Color.blurple()
     )
@@ -325,6 +333,9 @@ async def ticket_panel(interaction: discord.Interaction):
 # =========================
 keep_alive()
 
-bot = Bot()  # ✅ ONLY ONE INSTANCE
+token = os.getenv("DISCORD_TOKEN")
 
-bot.run(os.getenv("DISCORD_TOKEN"))
+if not token:
+    raise ValueError("Missing DISCORD_TOKEN")
+
+bot.run(token)
