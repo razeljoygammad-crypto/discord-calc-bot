@@ -7,6 +7,15 @@ from threading import Thread
 
 load_dotenv()
 
+# =========================
+# 🔒 CONFIG
+# =========================
+OWNER_ID = 923096413934616596  # ⬅️ YOUR ID
+
+SUPPORT_CATEGORY_ID = 1466995318246609069
+REPORT_CATEGORY_ID = 1491264107364745216
+BUY_CATEGORY_ID = 1491264209969872997
+ADMINSHIP_CATEGORY_ID = 1491264151786360855
 # ==========================================
 # 🔒 ALLOWED CATEGORY ID
 # ==========================================
@@ -175,12 +184,6 @@ async def calc(interaction: discord.Interaction):
 # ==========================================
 # 🎫 TICKET SYSTEM
 # ==========================================
-OWNER_ID = 923096413934616596  # ⬅️ YOUR ID
-
-SUPPORT_CATEGORY_ID = 1466995318246609069
-REPORT_CATEGORY_ID = 1491264107364745216
-BUY_CATEGORY_ID = 1491264209969872997
-ADMINSHIP_CATEGORY_ID = 1491264151786360855
 
 # =========================
 # STORAGE
