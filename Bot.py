@@ -159,13 +159,15 @@ bot = CalculatorBot()
 @bot.tree.command(name="calc", description="Open XP Calculator")
 async def calc(interaction: discord.Interaction):
 
-    if (
-        interaction.channel is None or
-        interaction.channel.category is None or
-        interaction.channel.category.id != ALLOWED_CATEGORY_ID
-    ):
+    if not interaction.channel or not interaction.channel.category:
         return await interaction.response.send_message(
-            "❌ This command can only be used in the allowed category.",
+            "❌ This command can't be used here.",
+            ephemeral=True
+        )
+
+    if interaction.channel.category.id != ALLOWED_CATEGORY_ID:
+        return await interaction.response.send_message(
+            "❌ Wrong category!",
             ephemeral=True
         )
 
