@@ -108,7 +108,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         # ==========================================
         # COST
         # ==========================================
-        total_dl = (mini * 7) + (small * 12) + (mediant * 18) + (vast * 34)
+        total_dl = (mini * 9) + (small * 16) + (mediant * 23) + (vast * 40)
 
         # ==========================================
         # TIME
@@ -136,13 +136,13 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
 
         packs_text = ""
         if vast:
-            packs_text += f"📦 {vast}x Vast Pack (34💎)\n"
+            packs_text += f"📦 {vast}x Vast Pack (40💎)\n"
         if mediant:
-            packs_text += f"📦 {mediant}x Mediant Pack (18💎)\n"
+            packs_text += f"📦 {mediant}x Mediant Pack (23💎)\n"
         if small:
-            packs_text += f"📦 {small}x Small Pack (12💎)\n"
+            packs_text += f"📦 {small}x Small Pack (16💎)\n"
         if mini:
-            packs_text += f"📦 {mini}x Mini Pack (7💎)\n"
+            packs_text += f"📦 {mini}x Mini Pack (9💎)\n"
 
         embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
         embed.add_field(name="💰 Total Cost", value=f"{total_dl} 💎 Diamond Locks", inline=False)
