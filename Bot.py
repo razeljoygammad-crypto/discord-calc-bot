@@ -17,9 +17,9 @@ ALLOWED_CATEGORY_ID = 1487387217017045134  # ⬅️ REPLACE THIS
 # ==========================================
 app = Flask('')
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "Bot is alive!"
+    return "Bot is running!"
 
 def run():
     port = int(os.environ.get("PORT", 10000))
@@ -88,7 +88,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         MINI_XP = 125_000
         SMALL_XP = 250_000
         MEDIANT_XP = 500_000
-        VAST_XP = 1_000_000
+        VAST_XP = 1_100_000
 
         remaining = total_xp
 
@@ -108,7 +108,7 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         # ==========================================
         # COST
         # ==========================================
-        total_dl = (mini * 12) + (small * 20) + (mediant * 25) + (vast * 45)
+        total_dl = (mini * 15) + (small * 28) + (mediant * 40) + (vast * 70)
 
         # ==========================================
         # TIME
@@ -134,18 +134,21 @@ class CalculatorModal(discord.ui.Modal, title='XP & Pack Calculator'):
         embed.add_field(name="📊 Levels", value=f"{start} ➜ {target}", inline=False)
         embed.add_field(name="📈 Total XP Needed", value=f"{total_xp:,}", inline=False)
 
+        # your custom emoji
+        emoji = "<:dl:1495834832524021962>"
+
         packs_text = ""
         if vast:
-            packs_text += f"📦 {vast}x Vast Pack (45💎)\n"
+            packs_text += f"👑 {vast}x Vast Pack (70{emoji})\n"
         if mediant:
-            packs_text += f"📦 {mediant}x Mediant Pack (25💎)\n"
+            packs_text += f"🌿 {mediant}x Mediant Pack (40{emoji})\n"
         if small:
-            packs_text += f"📦 {small}x Small Pack (20💎)\n"
+            packs_text += f"🔥 {small}x Small Pack (28{emoji})\n"
         if mini:
-            packs_text += f"📦 {mini}x Mini Pack (12💎)\n"
+            packs_text += f"🚀 {mini}x Mini Pack (15{emoji})\n"
 
         embed.add_field(name="📦 Recommended Packs", value=packs_text or "None", inline=False)
-        embed.add_field(name="💰 Total Cost", value=f"{total_dl} 💎 Diamond Locks", inline=False)
+        embed.add_field(name="💰 Total Cost", value=f"{total_dl} {emoji} Diamond Locks", inline=False)
         embed.add_field(name="⏱️ Estimated Time", value=f"{hours}h {minutes}m", inline=False)
 
         await interaction.response.send_message(embed=embed)
